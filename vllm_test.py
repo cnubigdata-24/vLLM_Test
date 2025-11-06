@@ -1,3 +1,6 @@
+# 실습을 위해 Hugging Face 가입 필요
+# 구글 코랩 실행시 Hugging Face Access Token 환경변수 설정 필요: HF_TOKEN
+
 import sys
 import os
 
