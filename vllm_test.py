@@ -1,25 +1,45 @@
-# GPU 확인
-!nvidia-smi
-
-# 환경변수를 시스템 레벨에서 먼저 설정
+import sys
 import os
-os.environ['VLLM_USE_V1'] = '0'
 
-# 구버전 vLLM 설치 (안정 버전)
-!pip install vllm==0.5.4 -q
+# GPU 확인
+get_ipython().system('nvidia-smi')
 
-# 또는 최신 버전에서 V1 엔진 사용
-# !pip install vllm -q
-# os.environ['VLLM_USE_V1'] = '1'  # V1 엔진 활성화
+# vLLM 설치 여부 확인
+try:
+    import vllm
+    VLLM_INSTALLED = True
+except ImportError:
+    VLLM_INSTALLED = False
 
-# 메모리 정리
+if not VLLM_INSTALLED:
+    print("="*80)
+    print("vLLM 설치 시작...")
+    print("="*80)
+    
+    print("pyairports 설치 중...")
+    get_ipython().system('pip install pyairports -q')
+    print("vLLM 설치 중...")
+    get_ipython().system('pip install vllm -q')
+    
+    print("\n"+"="*80)
+    print("설치 완료! 런타임 재시작 중...")
+    print("="*80)
+    
+    import IPython
+    IPython.Application.instance().kernel.do_shutdown(True)
+
+# 여기부터는 vLLM이 설치되어 있을 때만 실행됨
+print("="*80)
+print("테스트 시작")
+print("="*80)
+
+os.environ['VLLM_USE_V1'] = '1'
+
 import torch
 import gc
-
 torch.cuda.empty_cache()
 gc.collect()
 
-# 모델 로딩
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import time
@@ -51,7 +71,7 @@ print("-" * 80)
 print(f">> vLLM의 초기 로드 시간이 HuggingFace보다 긴 것이 일반적:  KV 캐시 블록 풀 메모리 사전 할당, CUDA 커널들을 사전 컴파일하고 최적화, 배치 처리 준비")
 print(f">> HuggingFace는 모델만 로드하고 추론 시점에 필요한 만큼만 메모리를 할당하여 초기 로딩 속도가 더 빠름")
 
-print("1. 단일 추론 속도 비교")
+print("\n1. 단일 추론 속도 비교")
 print("=" * 80)
 
 prompt = "The future of AI is"
@@ -68,7 +88,6 @@ vllm_time = time.time() - start_vllm
 print(f">> 입력: {prompt}")
 print(f">> 출력: {vllm_outputs[0].outputs[0].text[:100]}...")
 print(f">> 처리 시간: {vllm_time:.3f}초")
-
 
 # HuggingFace
 print("\n[HuggingFace 추론]")
@@ -92,7 +111,7 @@ print(f">> 처리 시간: {hf_time:.3f}초")
 
 print(f"\n>> 속도 비교: vLLM이 HuggingFace보다 {hf_time/vllm_time:.1f}배 빠름")
 
-print("2. 배치 처리 속도 비교 (Continuous Batching)")
+print("\n2. 배치 처리 속도 비교 (Continuous Batching)")
 print("=" * 80)
 
 prompts = [
@@ -148,7 +167,7 @@ print(f">> 처리량: {len(prompts)/hf_batch_time:.2f} 요청/초")
 
 print(f"\n>> 배치 처리 속도 비교: vLLM이 HuggingFace보다 {hf_batch_time/vllm_batch_time:.1f}배 빠름")
 
-print("3. 메모리 효율성 비교 (PagedAttention): 긴 시퀀스 생성 시 메모리 사용량")
+print("\n3. 메모리 효율성 비교 (PagedAttention): 긴 시퀀스 생성 시 메모리 사용량")
 print("-" * 80)
 
 test_prompt = "Write a detailed story about artificial intelligence:"
@@ -220,7 +239,6 @@ print(f"  메모리 절약: {memory_savings:.2f} MB ({memory_savings_pct:.1f}%)"
 print(f"  속도: vLLM이 {speed_ratio:.1f}배 빠름")
 print("─" * 60)
 
-
 print("\n vLLM PagedAttention:")
 print("  - KV 캐시를 고정 크기 블록(페이지)으로 분할")
 print("  - 필요할 때마다 블록을 동적으로 할당, 메모리 단편화 최소화 및 효율적 재사용")
@@ -228,7 +246,7 @@ print("  - 필요할 때마다 블록을 동적으로 할당, 메모리 단편�
 print("\n HuggingFace:")
 print("  - KV 캐시를 연속된 메모리 공간에 사전 할당, 최대 시퀀스 길이만큼 메모리 예약")
 
-print("4. 동시 사용자 처리 비교")
+print("\n4. 동시 사용자 처리 비교")
 print("=" * 80)
 
 user_queries = [f"User {i}: Hello, my name is" for i in range(1, 11)]
