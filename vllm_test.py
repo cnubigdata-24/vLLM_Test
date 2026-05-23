@@ -31,7 +31,7 @@ if not VLLM_INSTALLED:
     import IPython
     IPython.Application.instance().kernel.do_shutdown(True)
 
-# 여기부터는 vLLM이 설치되어 있을 때만 실행됨
+# vLLM 설치된 경우 실행
 print("="*80)
 print("테스트 시작")
 print("="*80)
